@@ -88,7 +88,7 @@ function replaceFontText (originalText, data, font) {
     const glyphs = Array.prototype.map.call(text, e => {
       const code = e.charCodeAt(0)
       if (!(code in reverseMapping)) {
-        throw new Error(`Char ${e} not found at Unicode table inside ${font.dict.get(PDFName.of('BaseFont'))}`)
+        throw new Error(`Char \`${e}\` not found at Unicode table inside ${font.dict.get(PDFName.of('BaseFont'))}`)
       }
       return reverseMapping[code].toString(16).padStart(2, '0')
     })
@@ -105,9 +105,9 @@ function processBlock (block, fonts, data) {
   let currentFont = -1
   matches.map(e => {
     let str, found
-    if (e[0].indexOf('/F') === 0) {
+    if (e[3] != null) {
       currentFont = e[3]
-    } else if (e[0].indexOf('(') === 0) {
+    } else if (e[2] != null) {
       [str, found] = replaceRawText(e[2].slice(0, -1), data)
       str = `(${str})`
     } else {

@@ -3,8 +3,9 @@ function insertAt (target, value, begin, end = begin) {
 }
 
 function regexForEach (regex, str, callback) {
+  const re = new RegExp(regex, regex.flags + (regex.flags.indexOf('g') !== -1 ? '' : 'g'))
   while (true) {
-    const match = regex.exec(str)
+    const match = re.exec(str)
     if (match == null) {
       break
     }
