@@ -19,9 +19,8 @@ function encodeStream (baseDict, data, encoding = 'FlateDecode') {
     throw new Error(`Filter ${encoding} is not implemented`)
   }
   const content = encode(data)
-  const lengthRef = dict.context.register(PDFNumber.of(content.length))
   dict.set(PDFName.of('Filter'), PDFName.of(encoding))
-  dict.set(PDFName.of('Length'), lengthRef)
+  dict.set(PDFName.of('Length'), PDFNumber.of(content.length))
   return PDFRawStream.of(dict, content)
 }
 
@@ -43,10 +42,11 @@ function replaceRawText (text, data) {
   let found = false
   data.forEach(([key, value]) => {
     if (key instanceof RegExp) {
-      regexForEach(key, text, (match) => {
+      const regExp = new RegExp(key, key.flags + (key.flags.indexOf('g') !== -1 ? '' : 'g'))
+      regexForEach(regExp, text, (match) => {
         found = true
         text = insertAt(text, value, match.index, match.index + match[0].length)
-        key.lastIndex = key.lastIndex + value.length - match[0].length
+        regExp.lastIndex += match[0].length - value.length
       })
     } else if (typeof key === 'string') {
       let lastIndex = 0
@@ -139,10 +139,16 @@ function processBlock (block, fonts, data) {
 
 /**
  * @param doc {PDFDocument}
- * @param data {Array<[string | RegExp, string]>}
+ * @param data {Array<[string | RegExp, string]>|Object<string | RegExp, string>}
  */
 module.exports = function (doc, data) {
-  const streamSet = doc.getPages().map(page => [page.node.get(PDFName.of('Contents')), page.node.Resources().get(PDFName.of('Font'))])
+  if (typeof data === 'object' && !Array.isArray(data)) {
+    data = Object.keys(data).map(k => [k, data[k]])
+  }
+  const streamSet = doc.getPages().map(page => page.node).map(node => [
+    node.get(PDFName.of('Contents')), //node.Contents(),
+    node.Resources().dict.get(PDFName.of('Font')),
+  ])
   const contentDone = {}
   streamSet.forEach(([contentRef, fontDict]) => {
     if (contentDone[contentRef] === true) {
