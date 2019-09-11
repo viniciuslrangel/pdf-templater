@@ -35,7 +35,6 @@ function decodeText (str, map) {
       text += String.fromCharCode(map[parseInt(data[i * 2] + data[i * 2 + 1], 16)])
     }
   })
-  console.log(text)
   return text
 }
 
@@ -50,8 +49,9 @@ function replaceRawText (text, data) {
           break
         }
         found = true
-        text = insertAt(text, value, match.index, match.index + match[0].length)
-        regExp.lastIndex += match[0].length - value.length
+        const output = typeof value === 'function' ? value(match) : value
+        text = insertAt(text, output, match.index, match.index + match[0].length)
+        regExp.lastIndex += match[0].length - output.length
       }
     } else if (typeof key === 'string') {
       let lastIndex = 0
