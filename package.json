@@ -1,6 +1,6 @@
 {
   "name": "pdf-templater",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "generate pdf with template (like docxtemplater, for PDF documents)",
   "main": "src/index.js",
   "repository": "git+https://github.com/viniciuslrangel/pdf-templater.git",

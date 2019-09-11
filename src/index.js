@@ -35,6 +35,7 @@ function decodeText (str, map) {
       text += String.fromCharCode(map[parseInt(data[i * 2] + data[i * 2 + 1], 16)])
     }
   })
+  console.log(text)
   return text
 }
 
@@ -43,11 +44,15 @@ function replaceRawText (text, data) {
   data.forEach(([key, value]) => {
     if (key instanceof RegExp) {
       const regExp = new RegExp(key, key.flags + (key.flags.indexOf('g') !== -1 ? '' : 'g'))
-      regexForEach(regExp, text, (match) => {
+      while (true) {
+        const match = regExp.exec(text)
+        if (match == null) {
+          break
+        }
         found = true
         text = insertAt(text, value, match.index, match.index + match[0].length)
         regExp.lastIndex += match[0].length - value.length
-      })
+      }
     } else if (typeof key === 'string') {
       let lastIndex = 0
       const anchor = `{${key}}`
@@ -158,8 +163,9 @@ module.exports = function (doc, data) {
     const stream = doc.context.lookup(contentRef)
 
     const btRegex = /BT(.*?)ET/isg
+    let content = decodeStream(stream)
+    let any
     while (true) {
-      let content = decodeStream(stream)
       const match = btRegex.exec(content)
       if (match == null) {
         break
@@ -168,10 +174,13 @@ module.exports = function (doc, data) {
       if (res == null) {
         continue
       }
+      any = true
       const begin = match.index + match[0].indexOf(match[1])
       content = insertAt(content, res, begin, begin + match[1].length)
-      const newStream = encodeStream(stream.dict, content)
-      doc.context.assign(contentRef, newStream)
+      btRegex.lastIndex -= match[0].length - res.length
+    }
+    if (any) {
+      doc.context.assign(contentRef, encodeStream(stream.dict, content))
     }
   })
 }
