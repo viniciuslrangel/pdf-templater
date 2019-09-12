@@ -1,9 +1,9 @@
 const { PDFDocument, PDFName, PDFRawStream, PDFNumber } = require('pdf-lib')
 const codecs = require('./codec')
-const { insertAt, regexForEach } = require('./util')
+const { insertAt, regexForEach, dictGet } = require('./util')
 
 function decodeStream (stream) {
-  let filter = stream.dict.get(PDFName.of('Filter'))
+  let filter = dictGet(stream.dict, 'Filter')
   filter = filter && filter.value()
   const { decode } = codecs[filter.substr(1)] || {}
   if (!decode) {
@@ -73,7 +73,9 @@ function replaceRawText (text, data) {
 }
 
 function replaceFontText (originalText, data, font) {
-  const unicodeTableDict = font.context.lookup(font.dict.get(PDFName.of('ToUnicode')))
+  const unicodeTableDict = font.context.lookup(
+    dictGet(font.dict, 'ToUnicode'),
+  )
   let unicodeTableData = decodeStream(unicodeTableDict)
   unicodeTableData = unicodeTableData.substr(unicodeTableData.indexOf('beginbfchar'), unicodeTableData.indexOf('endbfchar'))
   const unicodeRegex = /<([\da-f]+)>\s?<([\da-f]+)>/isg
@@ -93,7 +95,7 @@ function replaceFontText (originalText, data, font) {
     const glyphs = Array.prototype.map.call(text, e => {
       const code = e.charCodeAt(0)
       if (!(code in reverseMapping)) {
-        throw new Error(`Char \`${e}\` not found at Unicode table inside ${font.dict.get(PDFName.of('BaseFont'))}`)
+        throw new Error(`Char \`${e}\` not found at Unicode table inside ${dictGet(font.dict, 'BaseFont')}`)
       }
       return reverseMapping[code].toString(16).padStart(2, '0')
     })
@@ -119,7 +121,7 @@ function processBlock (block, fonts, data) {
       [str, found] = replaceFontText(
         e[1],
         data,
-        fonts.context.lookup(fonts.dict.get(PDFName.of(currentFont))),
+        fonts.context.lookup(dictGet(fonts.dict, currentFont)),
       )
     }
     if (found) {
@@ -151,8 +153,8 @@ module.exports = function (doc, data) {
     data = Object.keys(data).map(k => [k, data[k]])
   }
   const streamSet = doc.getPages().map(page => page.node).map(node => [
-    node.get(PDFName.of('Contents')), //node.Contents(),
-    node.Resources().dict.get(PDFName.of('Font')),
+    dictGet(node.dict, 'Contents'),
+    dictGet(node.Resources().dict, 'Font'),
   ])
   const contentDone = {}
   streamSet.forEach(([contentRef, fontDict]) => {

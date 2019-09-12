@@ -12,4 +12,8 @@ function regexForEach (regex, str, callback) {
   }
 }
 
-module.exports = { insertAt, regexForEach }
+function dictGet(dict, name) {
+  return Array.from(dict.entries()).find(e => e[0].encodedName === `/${name}`)[1]
+}
+
+module.exports = { insertAt, regexForEach, dictGet }
